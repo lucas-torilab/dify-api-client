@@ -34,12 +34,15 @@ class StreamEvent(str, Enum):
     PARALLEL_BRANCH_FINISHED = "parallel_branch_finished"
     AGENT_LOG = "agent_log"
     NODE_RETRY = "node_retry"
+    IGNORED = "_"
 
     @classmethod
     def new(cls, event: Union["StreamEvent", str]) -> "StreamEvent":
         if isinstance(event, cls):
             return event
-        return utils.str_to_enum(cls, event)
+        return utils.str_to_enum(
+            cls, event, ignore_not_found=True, enum_default=cls.IGNORED
+        )
 
 
 class StreamResponse(BaseModel):
