@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import List, Optional, Union
 
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, ValidationInfo, field_validator
 
 from .. import utils
 from .base import ErrorResponse, Metadata
@@ -125,6 +125,14 @@ class MessageFileStreamResponse(StreamResponse):
     url: str
 
 
+_WORKFLOW_DATA_TYPE_BY_EVENT = {
+    StreamEvent.WORKFLOW_STARTED: WorkflowStartedData,
+    StreamEvent.NODE_STARTED: NodeStartedData,
+    StreamEvent.NODE_FINISHED: NodeFinishedData,
+    StreamEvent.WORKFLOW_FINISHED: WorkflowFinishedData,
+}
+
+
 class WorkflowsStreamResponse(StreamResponse):
     workflow_run_id: str
     data: Optional[
@@ -135,6 +143,18 @@ class WorkflowsStreamResponse(StreamResponse):
             NodeFinishedData,
         ]
     ]
+
+    @field_validator("data", mode="before")
+    def resolve_data_type(cls, data, info: ValidationInfo):
+        # `data`'s shape depends on the sibling `event` field, but a
+        # plain Union lets pydantic's smart-mode matching pick an
+        # earlier, subset-matching member (e.g. NodeStartedData for a
+        # node_finished payload), silently dropping fields like
+        # status/error/elapsed_time. Resolve explicitly instead.
+        if not isinstance(data, dict):
+            return data
+        data_type = _WORKFLOW_DATA_TYPE_BY_EVENT.get(info.data.get("event"))
+        return data_type(**data) if data_type else data
 
 
 class ChatWorkflowsStreamResponse(WorkflowsStreamResponse):
