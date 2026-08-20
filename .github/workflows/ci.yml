@@ -23,7 +23,7 @@ jobs:
       - name: Install Ruff
         run: |
           pip install --upgrade pip
-          pip install ruff<0.16.0
+          pip install "ruff<0.16.0"
       
       - name: Run Ruff linter
         run: ruff check .
