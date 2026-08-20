@@ -1,7 +1,7 @@
 from enum import Enum
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from .base import File, ResponseMode
 
@@ -14,9 +14,13 @@ class WorkflowStatus(str, Enum):
 
 
 class ExecutionMetadata(BaseModel):
-    total_tokens: Optional[int]
-    total_price: Optional[str]
-    currency: Optional[str]
+    model_config = ConfigDict(extra="allow")
+
+    total_tokens: Optional[int] = None
+    # Dify sends this as a string in most places, but as a raw float
+    # in some node execution_metadata payloads.
+    total_price: Optional[Union[str, float]] = None
+    currency: Optional[str] = None
 
 
 class WorkflowStartedData(BaseModel):
